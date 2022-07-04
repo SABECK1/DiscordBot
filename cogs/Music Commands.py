@@ -1,14 +1,12 @@
 import asyncio
-import json
-import re
+import datetime
 import random
+import re
 
 import lavalink
 from discord import Embed
 from discord import utils
 from discord.ext import commands
-from youtube_search import YoutubeSearch
-import datetime
 
 url_rx = re.compile(r'https?://(?:www\.)?.+')
 
@@ -23,7 +21,16 @@ class MusicCog(commands.Cog):
         self.bot.music.add_event_hook(self.track_hook)
         self.game_ids = []
 
-
+    async def ensure_voice(self, ctx):
+        player = self.bot.music.player_manager.get(ctx.guild.id)
+        if not player or not player.is_connected:
+            await ctx.send("Player is not connected!")
+            return
+        # Check if Author is not in Voice or he doesn't share a Voicechannel with the Bot!
+        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
+            await ctx.send("You are not in a voicechannel with me!")
+            return
+        return player
 
     @commands.command(aliases=["j"])
     async def join(self, ctx):
@@ -34,31 +41,24 @@ class MusicCog(commands.Cog):
             player = self.bot.music.player_manager.create(ctx.guild.id, endpoint=str(ctx.guild.region))
             if not player.is_connected:
                 player.store('channel', ctx.channel.id)
+                player.store('guild', ctx.guild)
                 await self.connect_to(ctx.guild.id, str(vc.id))
-                print("hello")
         else:
-            print(f"{member} was not in a Voicechannel at the time")
             await ctx.send("You have to be in a Voicechannel to do that!")
-            raise Exception
+            raise Exception(f"{member} was not in a Voicechannel at the time")
 
-    @commands.command(aliases=["pl","p"])
+    @commands.command(aliases=["pl", "p"])
     async def play(self, ctx, *, query):
-
-        try:
-            await self.join(ctx)
-        except:
-            print("Something went wrong")
-            return
-
-        player = self.bot.music.player_manager.create(ctx.guild.id, endpoint=str(ctx.guild.region))
-        player.store('channel', ctx.channel.id)
+        await self.join(ctx)
+        await asyncio.sleep(.5)
+        player = await self.ensure_voice(ctx)
 
         if not url_rx.match(query):
             query = f"ytsearch:{query}"
 
         results = await player.node.get_tracks(query)
         tracks = results["tracks"]
-
+        print(results)
         if results["loadType"] == "PLAYLIST_LOADED":
             i = 0
             for track in tracks:
@@ -69,19 +69,6 @@ class MusicCog(commands.Cog):
             track = tracks[0]
             await ctx.send(f"💽 Enqueued {track['info']['title']}")
             player.add(requester=ctx.author.id, track=track)
-
-        '''if not results or not results["tracks"]:
-            # YoutubeSearch is sometimes more reliable for some reason
-            results = YoutubeSearch(str(query), max_results=1).to_json()
-            results_dict = json.loads(results)
-            url = 'https://www.youtube.com' + results_dict["videos"][0]["url_suffix"]
-            # Try once again to get tracks as a failsafe
-            results = await player.node.get_tracks(url)
-            if not results or not results["tracks"]:
-                return await ctx.send('Nothing found or an Error has occured!')
-                # Seems like nothing has worked so I guess there is nothing!'''
-
-
 
         if not player.is_playing:
             await player.play()
@@ -139,8 +126,6 @@ class MusicCog(commands.Cog):
 
             await ctx.send(embed=embed)
 
-
-
     @commands.command()
     async def shuffle(self, ctx):
         player = self.bot.music.player_manager.get(ctx.guild.id)
@@ -152,42 +137,73 @@ class MusicCog(commands.Cog):
             random.shuffle(player.queue)
             print("player shuffled")
 
-    @commands.command(aliases=["s","sk"])
-    async def skip(self, ctx):
-        player = self.bot.music.player_manager.get(ctx.guild.id)
+    @commands.command()
+    async def loop(self, ctx):
+        player = await self.ensure_voice(ctx)
+        if player:
+            if player.loop == 1:
+                player.set_loop(0)
+                await ctx.send("Current Track is no longer set to loop!")
+            else:
+                player.set_loop(1)  # single track
+                await ctx.send("Current Track is set to loop!")
 
-        await player.skip()
+    @commands.command()
+    async def loopqueue(self, ctx):
+        player = await self.ensure_voice(ctx)
+        if player:
+            if player.loop == 2:
+                player.set_loop(0)
+                await ctx.send("Current Queue is no longer set to loop!")
+            else:
+                player.set_loop(2)
+                await ctx.send("Current Queue is set to loop!")
+
+    @commands.command(aliases=["s", "sk"])
+    async def skip(self, ctx):
+        player = await self.ensure_voice(ctx)
+        if player:
+            # Stop looping single track to make skipping it possible
+            if player.loop == 1:
+                player.set_loop(0)
+            # If only one song is played the player should end without repeating the same song
+            if player.loop == 2 and not player.queue:
+                player.set_loop(0)
+            await ctx.send("Song has been skipped!")
+            await player.skip()
 
     @commands.command()
     async def pause(self, ctx):
-        player = self.bot.music.player_manager.get(ctx.guild.id)
-        await player.set_pause(True)
+        player = await self.ensure_voice(ctx)
+        if player:
+            await player.set_pause(True)
 
     @commands.command(aliases=["r"])
     async def resume(self, ctx):
-        player = self.bot.music.player_manager.get(ctx.guild.id)
-        await player.set_pause(False)
+        player = await self.ensure_voice(ctx)
+        if player:
+            await player.set_pause(False)
+
+    @commands.command(aliases=["clearq"])
+    async def clearqueue(self, ctx):
+        player = await self.ensure_voice(ctx)
+        if player:
+            player.queue.clear()
+            await ctx.send("Queue cleared!")
 
     @commands.command(aliases=["disconnect", "dc"])
     async def stop(self, ctx):
-        player = self.bot.music.player_manager.get(ctx.guild.id)
-        if not player.is_connected:
-            return await ctx.send("Player is not connected!")
-        # Check if Author is not in Voice or he doesn't share a Voicechannel with the Bot!
-        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
-            return await ctx.send("You are not in a Voicechannel with me!")
-        # Else just completely shut down the player
-        player.queue.clear()
-
-        self.guild_remove(player.guild_id)
-
-        await player.stop()
-        await ctx.guild.change_voice_state(channel=None)
-        await ctx.send("The player has disconnected!")
+        player = await self.ensure_voice(ctx)
+        if player:
+            player.queue.clear()
+            self.guild_remove(player.guild_id)
+            await player.stop()
+            await ctx.guild.change_voice_state(channel=None)
+            await ctx.send("The player has stopped!")
 
     @commands.command(aliases=["q"])
     async def queue(self, ctx):
-        player = self.bot.music.player_manager.get(ctx.guild.id)
+        player = await self.ensure_voice(ctx)
         embed = Embed()
         if not player.current:
             return await ctx.send("There is nothing playing on this server right now")
@@ -202,11 +218,62 @@ class MusicCog(commands.Cog):
                                 inline=False)
             await ctx.send(embed=embed)
 
+    async def calculate_pos(self, value):
+        try:
+            h, m, s = value.split(":")
+        except ValueError:
+            try:
+                h = 0
+                m, s = value.split(":")
+            except ValueError:
+                h, m = (0, 0)
+                s = value
+        milliseconds = int(h) * 3600000 + int(m) * 60000 + int(s) * 1000
+        return milliseconds
+
+    @commands.command(name="forward")
+    async def jumpforward(self, ctx, value: str):
+        player = await self.ensure_voice(ctx)
+        if player and player.current.is_seekable:
+            milliseconds = await self.calculate_pos(value)
+            new_pos = milliseconds + player.current.position
+            await player.seek(new_pos)
+            await ctx.send(f"Player jumped forward to {lavalink.format_time(new_pos)}!")
+
+    @commands.command(name="backward")
+    async def jumpbackward(self, ctx, value: str):
+        player = await self.ensure_voice(ctx)
+        if player and player.current.is_seekable:
+            milliseconds = await self.calculate_pos(value)
+            new_pos = player.current.position - milliseconds
+            if new_pos < 0:
+                new_pos = 0
+            await player.seek(new_pos)
+            await ctx.send(f"Player jumped backward to {lavalink.format_time(new_pos)}!")
+
+    @commands.command(name="jumpto")
+    async def jump_to_pos(self, ctx, value: str):
+        player = await self.ensure_voice(ctx)
+        if player and player.current.is_seekable:
+            milliseconds = await self.calculate_pos(value)
+            await player.seek(milliseconds)
+            await ctx.send(f"Player jumped to {lavalink.format_time(milliseconds)}!")
+
+    @commands.command(name="volume")
+    async def volume_command(self, ctx, value: int):
+        if not 0 <= value <= 100:
+            await ctx.send("Volume should be between 0 and 100!")
+        player = await self.ensure_voice(ctx)
+        if player:
+            await player.set_volume(value)
+            await ctx.send(f"Volume has been set to {value}!")
+
     async def track_hook(self, event):
         def channel_check(event):
+            # gets channel id
             channel = event.player.fetch("channel")
-
             if channel:
+                # returns channel object
                 channel = self.bot.get_channel(channel)
                 return channel
 
@@ -218,35 +285,44 @@ class MusicCog(commands.Cog):
             self.guild_remove(guild_id)
             await self.connect_to(guild_id, None)
 
-
         elif isinstance(event, lavalink.events.TrackStartEvent):
-            print(event.track.title)
             if not event.player.guild_id in self.game_ids:
                 channel = channel_check(event)
                 await channel.send(
                     "**:headphones: Now playing {} :headphones:**\r▶️ {}".format(event.track.title,
-                                                                                     event.track.uri))
+                                                                                 event.track.uri))
             else:
                 await event.player.set_pause(True)
                 await asyncio.sleep(10)
                 await event.player.set_pause(False)
-                print("A new track has started on a guild that already plays!")
+
 
 
         # When playing the game players should be notified what Song it was even when they didn't skip it
-        elif isinstance(event, lavalink.events.TrackEndEvent) and event.player.guild_id in self.game_ids:
-            channel = channel_check(event)
-            await channel.send(f"The song was: {event.track.title}\n{event.track.uri}")
+        elif isinstance(event, lavalink.events.TrackEndEvent):
+            if event.player.guild_id in self.game_ids:
+                channel = channel_check(event)
+                await channel.send(f"The song was: {event.track.title}\n{event.track.uri}")
+            else:
+                # Gets guild and all its voicechannels to find the voicechannelobject with the event.player.channel_id
+                guild = event.player.fetch('guild')
+                voice_channel = utils.get(guild.voice_channels, id = event.player.channel_id)
+                # If only the bot is in the call, stop the playback
+                if len(voice_channel.members) == 1:
+                    await event.player.stop()
+
+
+
+
+
 
     async def connect_to(self, guild_id: int, channel_id: str):
         websocket = self.bot._connection._get_websocket(guild_id)
         await websocket.voice_state(str(guild_id), channel_id)
 
     def guild_remove(self, guild_id):
-        try:
+        if guild_id in self.game_ids:
             self.game_ids.remove(guild_id)
-        except:
-            print("Guild didnt play the game")
 
 
 def setup(bot):
