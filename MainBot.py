@@ -1,6 +1,5 @@
 import asyncio
 import os
-
 import discord
 import youtube_dl
 from discord.ext import commands
@@ -104,8 +103,6 @@ async def sound(ctx):
 
         voice = await ctx.message.author.voice.channel.connect()
         server = ctx.message.guild.voice_client
-
-
     else:
         embed = discord.Embed(title="```Could not perform this task.```",
                               description="You need to be in a voice channel")
@@ -127,10 +124,8 @@ async def sound(ctx):
             voice.source.volume = 0.3
             playing = True
             while True:
-
                 if not voice.is_playing():
                     await server.disconnect()
-
                     await ctx.message.channel.purge(limit=1)
 
 
@@ -150,20 +145,18 @@ def is_not_pinned(mess):
 async def on_voice_state_update(member, before, after):
     if member.bot:
         return
-
-    if before.channel == after.channel:
-        if after.self_stream:
-            if member.id == 327478682144997376:
-                await member.move_to(None)
-                try:
-                    if not member.dm_channel:
-                        await member.create_dm()
-                    await member.dm_channel.send("Julian hör auf zu streamen")
-                except discord.errors.Forbidden:
-                    print("DM couldn't be sent to {}".format(member.name))
-        #VoiceStateUpdate = Mute/Deaf etc.
-        return
-
+    # if before.channel == after.channel:
+    #     if after.self_stream:
+    #         if member.id == 327478682144997376:
+    #             await member.move_to(None)
+    #             try:
+    #                 if not member.dm_channel:
+    #                     await member.create_dm()
+    #                 await member.dm_channel.send("Julian hör auf zu streamen")
+    #             except discord.errors.Forbidden:
+    #                 print("DM couldn't be sent to {}".format(member.name))
+    #     #VoiceStateUpdate = Mute/Deaf etc.
+    #     return
     if not before.channel:
         print(f"{member.name} joined the channel {after.channel} on the Server {after.channel.guild}")
 
@@ -176,6 +169,8 @@ async def on_voice_state_update(member, before, after):
     if after.channel and after.channel.name == "Create Voicechannel":
         Check_For_Voicechannel = discord.utils.get(member.guild.voice_channels, name=member.name)
         Check_For_VoiceCategory = discord.utils.get(member.guild.categories, name="Custom Voicechannels")
+
+
 
         # If Voicechannel exists, delete it
         if Check_For_Voicechannel:

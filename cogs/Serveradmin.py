@@ -1,5 +1,4 @@
 import asyncio
-from datetime import datetime
 import discord
 from discord.ext import commands
 
@@ -16,7 +15,7 @@ class Serveradministration(commands.Cog):
         await ctx.send(invitelink)
 
     @commands.command(pass_context=True)
-    async def clear(self, ctx):
+    async def clearchat(self, ctx):
         if ctx.message.content.startswith('-clear'):
             if ctx.message.author.permissions_in(ctx.message.channel).manage_messages:
                 args = ctx.message.content.split(' ')
