@@ -4,7 +4,7 @@ import aiohttp
 import discord
 import numpy as np
 import requests
-from PIL import Image, ImageChops
+import pil
 from discord.ext import commands
 
 
@@ -20,10 +20,10 @@ class Images(commands.Cog):
     async def cat(self, ctx):
         async with aiohttp.ClientSession() as CS:
             async with CS.get("http://aws.random.cat//meow") as r:
-                File = await r.json()
+                file = await r.json()
                 embed = discord.Embed(title="Random Cat Picture")
 
-                embed.set_image(url=File['file'])
+                embed.set_image(url=file['file'])
                 embed.set_footer(text="Images/GIFS made possible by http://random.cat/")
                 await ctx.send(embed=embed)
 
@@ -31,10 +31,10 @@ class Images(commands.Cog):
     async def dog(self, ctx):
         async with aiohttp.ClientSession() as CS:
             async with CS.get("https://random.dog/woof.json") as r:
-                File = await r.json()
+                file = await r.json()
                 embed = discord.Embed(title="Random Dog Picture")
 
-                embed.set_image(url=File['url'])
+                embed.set_image(url=file['url'])
                 embed.set_footer(text="Images/GIFS made possible by http://random.dog/")
                 await ctx.send(embed=embed)
 
@@ -45,7 +45,7 @@ class Images(commands.Cog):
 
         response = requests.get(url=url, stream=True).raw
 
-        im = Image.open(response).convert("L")
+        im = pil.Image.open(response).convert("L")
 
         na = np.array(im)
 
@@ -56,7 +56,7 @@ class Images(commands.Cog):
         out[5::3, 2::3] = na[5::3, 2::3]
 
 
-        Image.fromarray(out).save("DiceEdit.png")
+        pil.Image.fromarray(out).save("DiceEdit.png")
         await ctx.channel.send(file=discord.File('DiceEdit.png'))
         os.remove("DiceEdit.png")
 
@@ -64,8 +64,8 @@ class Images(commands.Cog):
     async def invert(self, ctx, member: discord.Member):
         url = member.avatar_url
         response = requests.get(url=url, stream=True).raw
-        im = Image.open(response).convert("RGB")
-        inv_img = ImageChops.invert(im)
+        im = pil.Image.open(response).convert("RGB")
+        inv_img = pil.ImageChops.invert(im)
 
 
         inv_img.save("InvertEdit.png")
@@ -73,5 +73,5 @@ class Images(commands.Cog):
 
 
 
-def setup(bot):
-    bot.add_cog(Images(bot))
+async def setup(bot):
+    await bot.add_cog(Images(bot))

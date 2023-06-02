@@ -3,7 +3,6 @@ import random
 import discord
 from discord.ext import commands
 
-
 league_champions = ("Aatrox", "Ahri", "Akali", "Alistar", "Amumu", "Anivia", "Annie", "Aphelios", "Ashe",
                     "AurelionSol", "Azir", "Bard", "Blitzcrank", "Brand", "Braum", "Caitlyn", "Camille",
                     "Cassiopeia", "Cho'Gath", "Corki", "Darius", "Diana", "DrMundo", "Draven", "Ekko", "Elise",
@@ -29,7 +28,7 @@ league_champions = ("Aatrox", "Ahri", "Akali", "Alistar", "Amumu", "Anivia", "An
 class League(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.Roles =  ("Top", "Jungle", "Mid", "ADC", "Support")
+        self.Roles = ("Top", "Jungle", "Mid", "ADC", "Support")
 
     @commands.command(pass_context=True, aliases=["rr"])
     async def RR(self, ctx):
@@ -37,23 +36,20 @@ class League(commands.Cog):
 
         await ctx.message.channel.send("Your role is: {}".format(RolledRole))
 
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, aliases=["wq"])
     async def WQ(self, ctx):
-        RolledChampion = random.choice(league_champions)
+        rolledChampion = random.choice(league_champions)
 
+        championpath = "./Championbanner/"
+        championfile = championpath + rolledChampion + "Square.png.jpeg"
+        rolledRole = random.choice(self.Roles)
 
-        Championpath = "./Championbanner/"
-        Championfile = Championpath + RolledChampion + "Square.png.jpeg"
-        RolledRole = random.choice(self.Roles)
-
-        embed = discord.Embed(title="Your Champion is: {}".format(RolledChampion), color=0x00ff00,
-                              description="You are playing {} {}".format(RolledChampion, RolledRole))  # creates embed
-        file = discord.File(Championfile, filename="image.png")
+        embed = discord.Embed(title="Your Champion is: {}".format(rolledChampion), color=0x00ff00,
+                              description="You are playing {} {}".format(rolledChampion, rolledRole))  # creates embed
+        file = discord.File(championfile, filename="image.png")
         embed.set_thumbnail(url="attachment://image.png")
         await ctx.send(file=file, embed=embed)
 
 
-
-
-def setup(bot):
-    bot.add_cog(League(bot))
+async def setup(bot):
+    await bot.add_cog(League(bot))

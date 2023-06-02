@@ -21,9 +21,9 @@ class IMDBDATABASEPULL(commands.Cog):
 
     def check(self, embed, movie, *threads):
 
-        DirectorList = []
-        ActorList = []
-        GenreList = []
+        directorList = []
+        actorList = []
+        genreList = []
 
         id = movie.movieID
 
@@ -39,20 +39,20 @@ class IMDBDATABASEPULL(commands.Cog):
         actors = info.get('cast', '')
         for actor in actors[:3]:
             if actor.currentRole:
-                ActorList.append(f"{actor['name']} as {actor.currentRole}\n")
+                actorList.append(f"{actor['name']} as {actor.currentRole}\n")
             else:
-                ActorList.append(f"{actor['name']}\n")
+                actorList.append(f"{actor['name']}\n")
 
 ############MOVIE INFORMATION###############
 
         if info["kind"] == "movie":
             directors = info['directors']
             for director in directors:
-                DirectorList.append(f"{director['name']} \n")
+                directorList.append(f"{director['name']} \n")
             for genre in info.get('genres', ''):
-                GenreList.append(str(genre) + " |")
-            embed.add_field(name=f"__Movie: {' '.join(GenreList)}__",
-                            value=f"[{movie.get('title', '')} ({movie.get('year', '')})]({movie_url}) | {info.get('rating', '')}☆ \n **Directed by:** \n {' '.join(DirectorList)} \n **Starring:** \n {' '.join(ActorList)} ",
+                genreList.append(str(genre) + " |")
+            embed.add_field(name=f"__Movie: {' '.join(genreList)}__",
+                            value=f"[{movie.get('title', '')} ({movie.get('year', '')})]({movie_url}) | {info.get('rating', '')}☆ \n **Directed by:** \n {' '.join(directorList)} \n **Starring:** \n {' '.join(actorList)} ",
                             inline=False)
 
 #########TV SERIES INFORMATION###########
@@ -60,17 +60,17 @@ class IMDBDATABASEPULL(commands.Cog):
         elif info["kind"] == "tv series":
             writers = info["writer"]
             for writer in writers:
-                if writer["name"] not in DirectorList:
-                    DirectorList.append(f"{writer.get('name', '')}")
-                    DirectorList.append(
+                if writer["name"] not in directorList:
+                    directorList.append(f"{writer.get('name', '')}")
+                    directorList.append(
                         "\n")  # Extremely lazy way to ensure that the if statement above works \n destroys it otherwise
 
                 else:
                     continue
             for genre in info["genres"]:
-                GenreList.append(str(genre) + " |")
-            embed.add_field(name=f"__TV Series: {' '.join(GenreList)}__",
-                            value=f"[{movie.get('title', '')} ({movie.get('year', '')})]({movie_url}) | {info.get('rating', '')}☆ \n **Directed by:** \n {' '.join(DirectorList)} \n **Starring:** \n {' '.join(ActorList)} ",
+                genreList.append(str(genre) + " |")
+            embed.add_field(name=f"__TV Series: {' '.join(genreList)}__",
+                            value=f"[{movie.get('title', '')} ({movie.get('year', '')})]({movie_url}) | {info.get('rating', '')}☆ \n **Directed by:** \n {' '.join(directorList)} \n **Starring:** \n {' '.join(actorList)} ",
                             inline=False)
 
 ##########JOINING THREADS TO AVOID REPETITION WHEN SEARCHING FOR ONE RANDOM MOVIE##############
@@ -176,5 +176,5 @@ class IMDBDATABASEPULL(commands.Cog):
                 return movie
 
 
-def setup(bot):
-    bot.add_cog(IMDBDATABASEPULL(bot))
+async def setup(bot):
+    await bot.add_cog(IMDBDATABASEPULL(bot))

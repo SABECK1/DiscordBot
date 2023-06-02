@@ -1,33 +1,30 @@
 import asyncio
 import os
+import subprocess
+
 import discord
 import youtube_dl
 from discord.ext import commands
-import subprocess
-from settings import *
+from dotenv import load_dotenv
 from YTDL import add_opts
 
 intents = discord.Intents.all()
 intents.members = True
 
+load_dotenv()
+
+client = commands.Bot(command_prefix=f"{os.getenv('COMMAND_PREFIX')}", intents=intents, help_command=None)
 
 
-client = commands.Bot(command_prefix=f"{COMMAND_PREFIX}", intents=intents, help_command=None)
-
-client.load_extension("cogs.Images")
-client.load_extension("cogs.RandomNumber")
-client.load_extension("cogs.HelpCommands")
-client.load_extension("cogs.Music Commands")
-client.load_extension("cogs.Serveradmin")
-client.load_extension("cogs.IMDB")
-client.load_extension("cogs.Reddit")
-client.load_extension("cogs.League")
-client.load_extension("cogs.stocks")
 
 
 @client.event
 async def on_ready():
-    subprocess.Popen(['java', '-jar', 'Lavalink.jar'])
+    #subprocess.Popen(['java', '-jar', 'Lavalink.jar'])
+    for filename in os.listdir('./cogs'):
+        if filename.endswith('.py'):
+            await client.load_extension(f'cogs.{filename[:-3]}')
+
     print('Logged in as {}'.format(client.user.name))
     client.loop.create_task(status_task())
     print("Version:", discord.__version__)
@@ -186,16 +183,18 @@ async def on_voice_state_update(member, before, after):
             Voice.append(New_Voicechannel.id)
 
     if before.channel:
+        if before.channel.name == "Create Voicechannel":
+            return
         if len(before.channel.members) != 0:
-            print(f"Voicechannel {before.channel.id} is not empty")
+           pass
         elif before.channel.id not in Voice:
             print("Voicechannel was not a bot created one!")
 
         else:
-
+            print(Voice, "Deleted Channel")
             await before.channel.delete()
             Voice.remove(before.channel.id)
-            print(Voice, "Deleted Channel")
+
 
 
 async def status_task():
@@ -279,4 +278,8 @@ async def on_guild_join(guild):
                                       )
 
 
-client.run(f"{DISCORD_TOKEN}")
+
+
+if __name__ == '__main__':
+
+    client.run(f"{os.getenv('DISCORD_TOKEN')}")

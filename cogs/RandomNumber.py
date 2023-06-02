@@ -8,7 +8,7 @@ class Random(commands.Cog):
         self.bot = bot
 
     @commands.command(pass_context=True)
-    async def rand(self,ctx):
+    async def rand(self, ctx):
         args = ctx.message.content.split(" ")
         print(args)
 
@@ -17,7 +17,9 @@ class Random(commands.Cog):
             secondnumber = int(args[2]) + 1
             num = random.choice(range(firstnumber, secondnumber))
             await ctx.message.channel.send("Your number is {}".format(num))
-        else: await ctx.send("You need to use two seperate numbers")
+        else:
+            await ctx.send("You need to use two seperate numbers")
 
-def setup(bot):
-    bot.add_cog(Random(bot))
+
+async def setup(bot):
+    await bot.add_cog(Random(bot))

@@ -26,5 +26,5 @@ class HelpCmds(commands.Cog):
         await ctx.channel.send(embed=embed)
 
 
-def setup(bot):
-    bot.add_cog(HelpCmds(bot))
+async def setup(bot):
+    await bot.add_cog(HelpCmds(bot))

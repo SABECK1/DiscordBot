@@ -16,13 +16,14 @@ class Serveradministration(commands.Cog):
 
     @commands.command(pass_context=True)
     async def clearchat(self, ctx):
-        if ctx.message.content.startswith('-clear'):
-            if ctx.message.author.permissions_in(ctx.message.channel).manage_messages:
-                args = ctx.message.content.split(' ')
-                if len(args) == 2:
-                    if args[1].isdigit():
-                        deleted = await ctx.message.channel.purge(limit=int(args[1]) + 1)
-                        await ctx.message.channel.send('{} Messages deleted.'.format(len(deleted) - 1))
+        if ctx.message.author.permissions_in(ctx.message.channel).manage_messages:
+            args = ctx.message.content.split(' ')
+            if len(args) == 2:
+                if args[1].isdigit():
+                    deleted = await ctx.message.channel.purge(limit=int(args[1]) + 1)
+                    await ctx.message.channel.send('{} Messages deleted.'.format(len(deleted) - 1))
+        else:
+            await ctx.send("You don't have permission to do that!")
 
     @commands.command(pass_context=True)
     @commands.has_permissions(kick_members=True)
@@ -37,7 +38,6 @@ class Serveradministration(commands.Cog):
     @commands.command(pass_context=True)
     async def msg(self, ctx):
         await ctx.message.channel.purge(limit=1)
-        await ctx.send("Doch")
 
     @commands.command(pass_context=True)
     @commands.has_permissions(ban_members=True)
@@ -152,5 +152,5 @@ class Serveradministration(commands.Cog):
             print(member.activity)
 
 
-def setup(bot):
-    bot.add_cog(Serveradministration(bot))
+async def setup(bot):
+    await bot.add_cog(Serveradministration(bot))

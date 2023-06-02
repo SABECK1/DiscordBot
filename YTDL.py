@@ -20,9 +20,6 @@ add_opts = {
     }],
 }
 
-
-
-
 ffmpeg_options = {
     'options': '-vn'
 }

@@ -1,8 +1,16 @@
 import random
-
+from dotenv import load_dotenv
 import praw
+import os
 from discord.ext import commands
-from settings import *
+
+load_dotenv()
+REDDIT_APP_ID = os.getenv("REDDIT_APP_ID")
+REDDIT_APP_SECRET = os.getenv("REDDIT_APP_SECRET")
+user_agent = os.getenv("user_agent")
+REDDIT_SUBS = os.getenv("REDDIT_SUBS")
+REDDIT_NSFW_SUBS = os.getenv("REDDIT_NSFW_SUBS")
+
 
 class Reddit(commands.Cog):
     def __init__(self, bot):
@@ -35,5 +43,5 @@ class Reddit(commands.Cog):
                     await ctx.send("An Error has occured")
 
 
-def setup(bot):
-    bot.add_cog(Reddit(bot))
+async def setup(bot):
+    await bot.add_cog(Reddit(bot))

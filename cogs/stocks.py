@@ -85,7 +85,6 @@ class PriceCommand(commands.Cog):
     async def crypto(self, ctx, *args):
 
         if len(args) == 2:
-
             url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/info'
             parameters = {
                 'symbol': args[0].upper()
@@ -213,5 +212,5 @@ class PriceCommand(commands.Cog):
 
 # end
 
-def setup(bot):
-    bot.add_cog(PriceCommand(bot))
+async def setup(bot):
+    await bot.add_cog(PriceCommand(bot))
