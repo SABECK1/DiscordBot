@@ -80,6 +80,7 @@ class IMDBDATABASEPULL(commands.Cog):
                 thread.join()
 
     @commands.command()
+    # Searches Multiple Movies via Movie Name
     async def moviesearch(self, ctx, *msg):
         embed = discord.Embed(title="Movie Search Results")
         embed.set_thumbnail(
@@ -103,6 +104,7 @@ class IMDBDATABASEPULL(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
+    # Searches via movie name
     async def movie(self, ctx, *args):
         async with ctx.typing():
             if len(args) < 1:
@@ -121,6 +123,7 @@ class IMDBDATABASEPULL(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
+    # Returns a random movie
     async def randommovie(self, ctx, *msg):
         embed = discord.Embed(title="Movie Search Results")
 
